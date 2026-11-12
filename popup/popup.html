@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AutoAttendMCV</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <img src="../icons/icon48.png" alt="Logo" class="brand-icon">
+        <div>
+          <h1 class="brand-title">AutoAttendMCV</h1>
+          <p class="brand-subtitle">MyCourseVille Attendance Monitor</p>
+        </div>
+      </div>
+      <div id="status-badge" class="status-badge inactive">
+        <span class="status-dot"></span>
+        <span id="status-text">IDLE</span>
+      </div>
+    </header>
+
+    <!-- Main Timer Card -->
+    <section class="card timer-card">
+      <div class="timer-display-wrap">
+        <div id="countdown-display" class="countdown-display">00:00:00</div>
+        <div id="timer-label" class="timer-label">Set Working Period</div>
+      </div>
+
+      <!-- Working Period Input (hour : min : sec) -->
+      <div class="period-controls">
+        <label class="section-label">Set Working Period (hour : min : sec):</label>
+        <div class="time-inputs-row">
+          <div class="time-col">
+            <input type="number" id="input-hr" min="0" max="99" value="0" placeholder="0">
+            <span class="time-unit">hour</span>
+          </div>
+          <span class="time-sep">:</span>
+          <div class="time-col">
+            <input type="number" id="input-min" min="0" max="59" value="0" placeholder="0">
+            <span class="time-unit">min</span>
+          </div>
+          <span class="time-sep">:</span>
+          <div class="time-col">
+            <input type="number" id="input-sec" min="0" max="59" value="0" placeholder="0">
+            <span class="time-unit">sec</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Start / Stop Button -->
+      <div class="actions-row">
+        <button id="btn-toggle" class="btn btn-primary">
+          <span id="btn-icon">▶</span>
+          <span id="btn-label">Start Monitoring</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Target Chat (Real Group Names Queried) -->
+    <section class="card">
+      <div class="section-header">
+        <span class="section-title">TARGET CHAT</span>
+        <button id="btn-refresh-tabs" class="btn-icon" title="Query group names from open tabs">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+        </button>
+      </div>
+
+      <div class="toggle-row">
+        <label class="toggle-switch">
+          <input type="checkbox" id="toggle-monitor-all" checked>
+          <span class="slider"></span>
+        </label>
+        <span class="toggle-label">Monitor all open chat tabs</span>
+      </div>
+
+      <!-- Live Group Tabs List with Real Queried Names -->
+      <div id="group-tabs-list" class="group-tabs-list">
+        <div class="loading-text">Querying chat names from open tabs...</div>
+      </div>
+    </section>
+
+    <!-- Last Detected / Opened Link -->
+    <div id="last-opened-card" class="card last-opened-card" style="display: none;">
+      <div class="last-opened-header">
+        <span class="last-opened-badge">✅ Just Opened in Next Tab</span>
+        <span id="last-opened-time" class="last-opened-time"></span>
+      </div>
+      <div id="last-opened-group" class="last-opened-group"></div>
+      <a id="last-opened-link" class="last-opened-url" href="#" target="_blank"></a>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
