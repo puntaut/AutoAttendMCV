@@ -53,8 +53,8 @@ async function ensureOffscreen() {
   try {
     creatingOffscreenPromise = chrome.offscreen.createDocument({
       url: 'offscreen.html',
-      reasons: ['BLOBS', 'DOM_PARSER', 'AUDIO_PLAYBACK'],
-      justification: 'Decode QR codes from photos and play confirmation chime'
+      reasons: ['BLOBS', 'DOM_PARSER'],
+      justification: 'Decode QR codes from photos'
     });
     await creatingOffscreenPromise;
   } catch (e) {
@@ -64,31 +64,55 @@ async function ensureOffscreen() {
   }
 }
 
-// Automatically reinject content script into open Instagram tabs when extension boots or updates
-async function reinjectOpenTabs() {
+// Render the mini green/gray status badge on the extension action icon
+function updateActionBadge(active, text) {
   try {
-    const tabs = await chrome.tabs.query({ url: '*://*.instagram.com/*' });
-    for (const tab of tabs) {
-      if (tab.id && tab.url && tab.url.includes('/direct/')) {
-        // Inject keep_visible in MAIN world
-        chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          files: ['keep_visible.js'],
-          world: 'MAIN'
-        }).catch(() => {});
-
-        // Inject content script in ISOLATED world
-        chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          files: ['content_instagram.js']
-        }).catch(() => {});
+    if (!chrome.action) return;
+    if (active) {
+      chrome.action.setBadgeBackgroundColor({ color: '#10b981' });
+      if (chrome.action.setBadgeTextColor) {
+        chrome.action.setBadgeTextColor({ color: '#ffffff' });
       }
+      chrome.action.setBadgeText({ text: text || 'ON' });
+      chrome.action.setTitle({ title: 'AutoAttendMCV: ACTIVE (Monitoring Instagram Chats)' });
+    } else {
+      chrome.action.setBadgeBackgroundColor({ color: '#64748b' });
+      if (chrome.action.setBadgeTextColor) {
+        chrome.action.setBadgeTextColor({ color: '#ffffff' });
+      }
+      chrome.action.setBadgeText({ text: 'OFF' });
+      chrome.action.setTitle({ title: 'AutoAttendMCV: IDLE (Click to start monitoring)' });
     }
   } catch (e) {}
 }
 
 chrome.runtime.onInstalled.addListener(() => {
-  reinjectOpenTabs();
+  isMonitoringCurrentlyActive().then((active) => {
+    updateActionBadge(active);
+  }).catch(() => {
+    updateActionBadge(false);
+  });
+});
+
+chrome.runtime.onStartup?.addListener(() => {
+  isMonitoringCurrentlyActive().then((active) => {
+    updateActionBadge(active);
+  }).catch(() => {
+    updateActionBadge(false);
+  });
+});
+
+// Sync action badge immediately on background service worker boot
+isMonitoringCurrentlyActive().then((active) => {
+  if (active && endTime) {
+    const diff = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+    const mins = Math.floor(diff / 60);
+    updateActionBadge(true, mins > 0 ? `${mins}m` : `${diff}s`);
+  } else {
+    updateActionBadge(false);
+  }
+}).catch(() => {
+  updateActionBadge(false);
 });
 
 // Prevent Chrome from putting monitored Instagram tabs to sleep
@@ -114,6 +138,26 @@ async function broadcastStatusToTabs(active, seconds) {
     }
   } catch (e) {}
 }
+
+// Automatically reconnect and sync when an Instagram tab is refreshed
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  if (tab.url && tab.url.includes('instagram.com/direct/')) {
+    // Prevent Chromium Memory Saver from discarding monitored chat tabs
+    chrome.tabs.update(tabId, { autoDiscardable: false }).catch(() => {});
+
+    if (changeInfo.status === 'complete') {
+      const active = await isMonitoringCurrentlyActive();
+      if (active) {
+        // Sync monitoring status to the refreshed tab
+        chrome.tabs.sendMessage(tabId, {
+          type: 'MONITORING_STATUS_CHANGED',
+          active: true,
+          seconds: remainingSeconds
+        }).catch(() => {});
+      }
+    }
+  }
+});
 
 // Clean and unwrap URL if Instagram wrapped it
 function cleanUrl(raw) {
@@ -225,11 +269,6 @@ async function openLink(rawUrl, groupTitle = '') {
     // Open in new tab in foreground
     chrome.tabs.create({ url: url, active: true });
 
-    // Play cheerful confirmation chime via offscreen Web Audio
-    ensureOffscreen().then(() => {
-      chrome.runtime.sendMessage({ type: 'PLAY_CHIME' }).catch(() => {});
-    }).catch(() => {});
-
     // Update popup history
     chrome.storage.local.set({
       lastOpenedUrl: url,
@@ -255,8 +294,7 @@ function startTimer(seconds) {
 
   if (timerInterval) clearInterval(timerInterval);
 
-  chrome.action.setBadgeText({ text: 'ON' });
-  chrome.action.setBadgeBackgroundColor({ color: '#10b981' });
+  updateActionBadge(true, 'ON');
   ensureOffscreen();
   preventTabsFromSleeping();
   broadcastStatusToTabs(true, remainingSeconds);
@@ -275,11 +313,11 @@ function startTimer(seconds) {
       const hrs = Math.floor(remainingSeconds / 3600);
       const mins = Math.floor((remainingSeconds % 3600) / 60);
       if (hrs > 0) {
-        chrome.action.setBadgeText({ text: `${hrs}h` });
+        updateActionBadge(true, `${hrs}h`);
       } else if (mins > 0) {
-        chrome.action.setBadgeText({ text: `${mins}m` });
+        updateActionBadge(true, `${mins}m`);
       } else {
-        chrome.action.setBadgeText({ text: `${remainingSeconds}s` });
+        updateActionBadge(true, `${remainingSeconds}s`);
       }
 
       if (diff % 30 === 0) {
@@ -296,7 +334,7 @@ function stopTimer() {
     clearInterval(timerInterval);
     timerInterval = null;
   }
-  chrome.action.setBadgeText({ text: '' });
+  updateActionBadge(false);
   chrome.storage.local.set({ isActive: false, endTime: null });
   broadcastStatusToTabs(false, 0);
 }

@@ -34,7 +34,6 @@ URL Extraction & Normalization                  (Engines: BarcodeDetector,
                                 v
                             Execution
                 - Opens check-in URL in foreground tab
-                - Plays Web Audio confirmation chime
 ```
 
 ## Features
@@ -44,7 +43,6 @@ URL Extraction & Normalization                  (Engines: BarcodeDetector,
 - Computer vision preprocessing: contrast stretching, unsharp sharpening, inversion, and quadrant ROI crops.
 - Background tab visibility spoofing and WebSocket sniffing.
 - Session fingerprinting to prevent duplicate tab openings.
-- Chat-specific filtering and configurable timer.
 - Chat-specific filtering and configurable timer.
 
 ## Installation

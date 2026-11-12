@@ -23,7 +23,7 @@ Guidelines, architectural invariants, and design decisions for developing, modif
 - **Full Timer Duration**: Keep monitoring active until the timer naturally counts down to `00:00:00` (do not auto-stop after the first link, allowing for multiple attendance checks in a class session).
 - **Target Chat Filtering**: Strictly monitor only the chats selected/checked in the popup `TARGET CHAT` list to prevent false triggers from personal DMs.
 - **MyCourseVille Handling**: Keep MyCourseVille interactions minimal: open the check-in URL directly in an active foreground tab without injecting invasive automation scripts.
-- **Foreground + Alert**: Keep the opened attendance tab open in the foreground for the user to see, accompanied by an alert chime.
+- **Foreground Check-in**: Keep the opened attendance tab open in the foreground for the user to see.
 
 ## 5. Lifecycle & Error Prevention
 - **Self-Destruction on Context Invalidation**: In content scripts, always guard `chrome.runtime.sendMessage` and mutation handlers with `!chrome.runtime?.id`. If context is invalidated, immediately disconnect observers and unregister listeners to avoid orphan error logs.

@@ -26,7 +26,7 @@
     <!-- Main Timer Card -->
     <section class="card timer-card">
       <div class="timer-display-wrap">
-        <div id="countdown-display" class="countdown-display">00:00:00</div>
+        <div id="countdown-display" class="countdown-display">01:00:00</div>
         <div id="timer-label" class="timer-label">Set Working Period</div>
       </div>
 
@@ -35,7 +35,7 @@
         <label class="section-label">Set Working Period (hour : min : sec):</label>
         <div class="time-inputs-row">
           <div class="time-col">
-            <input type="number" id="input-hr" min="0" max="99" value="0" placeholder="0">
+            <input type="number" id="input-hr" min="0" max="99" value="1" placeholder="1">
             <span class="time-unit">hour</span>
           </div>
           <span class="time-sep">:</span>
@@ -60,24 +60,19 @@
       </div>
     </section>
 
-    <!-- Target Chat (Real Group Names Queried) -->
+    <!-- Monitored Chats -->
     <section class="card">
       <div class="section-header">
-        <span class="section-title">TARGET CHAT</span>
-        <button id="btn-refresh-tabs" class="btn-icon" title="Query group names from open tabs">
+        <div>
+          <span class="section-title">MONITORED CHATS</span>
+          <p class="section-hint">Open Instagram Direct chats in this browser</p>
+        </div>
+        <button id="btn-refresh-tabs" class="btn-icon" title="Refresh open chats list">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
         </button>
       </div>
 
-      <div class="toggle-row">
-        <label class="toggle-switch">
-          <input type="checkbox" id="toggle-monitor-all" checked>
-          <span class="slider"></span>
-        </label>
-        <span class="toggle-label">Monitor all open chat tabs</span>
-      </div>
-
-      <!-- Live Group Tabs List with Real Queried Names -->
+      <!-- Live Group Tabs List with Status Dots -->
       <div id="group-tabs-list" class="group-tabs-list">
         <div class="loading-text">Querying chat names from open tabs...</div>
       </div>

@@ -28,32 +28,32 @@
   // 2. Prevent React from pausing DOM updates when tab loses focus
   window.addEventListener('visibilitychange', (e) => e.stopImmediatePropagation(), true);
   document.addEventListener('visibilitychange', (e) => e.stopImmediatePropagation(), true);
-  window.addEventListener('blur', (e) => e.stopImmediatePropagation(), true);
-  document.addEventListener('blur', (e) => e.stopImmediatePropagation(), true);
 
-  // 3. Hook WebSocket to catch incoming messages at the network level with ZERO delay
+  // 3. Hook WebSocket using transparent Proxy to preserve all native static properties (WebSocket.OPEN, etc.)
   if (typeof window.WebSocket !== 'undefined') {
-    const OriginalWebSocket = window.WebSocket;
-    window.WebSocket = function (...args) {
-      const ws = new OriginalWebSocket(...args);
-      ws.addEventListener('message', (event) => {
-        try {
-          let text = '';
-          if (typeof event.data === 'string') {
-            text = event.data;
-          } else if (event.data instanceof ArrayBuffer) {
-            text = new TextDecoder('utf-8', { fatal: false }).decode(event.data);
-          }
-          if (text && text.includes('mycourseville.com')) {
-            window.postMessage({
-              type: '__AUTO_ATTENDANCE_RAW_DATA__',
-              payload: text
-            }, '*');
-          }
-        } catch (err) {}
+    try {
+      window.WebSocket = new Proxy(window.WebSocket, {
+        construct(target, args) {
+          const ws = new target(...args);
+          ws.addEventListener('message', (event) => {
+            try {
+              let text = '';
+              if (typeof event.data === 'string') {
+                text = event.data;
+              } else if (event.data instanceof ArrayBuffer) {
+                text = new TextDecoder('utf-8', { fatal: false }).decode(event.data);
+              }
+              if (text && text.includes('mycourseville.com')) {
+                window.postMessage({
+                  type: '__AUTO_ATTENDANCE_RAW_DATA__',
+                  payload: text
+                }, '*');
+              }
+            } catch (err) {}
+          });
+          return ws;
+        }
       });
-      return ws;
-    };
-    window.WebSocket.prototype = OriginalWebSocket.prototype;
+    } catch (e) {}
   }
 })();

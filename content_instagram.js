@@ -168,70 +168,33 @@
     return threadId ? `Chat #${threadId.slice(-6)}` : 'Instagram Chat';
   }
 
-  // On-screen floating monitoring status badge (🟢 Active / ⚪ Inactive)
-  function updateFloatingBadge(active) {
-    let badge = document.getElementById('auto-attendance-pill');
-    if (!badge) {
-      badge = document.createElement('div');
-      badge.id = 'auto-attendance-pill';
-      badge.style.position = 'fixed';
-      badge.style.bottom = '20px';
-      badge.style.right = '20px';
-      badge.style.zIndex = '9999999';
-      badge.style.padding = '8px 14px';
-      badge.style.borderRadius = '20px';
-      badge.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      badge.style.fontSize = '12px';
-      badge.style.fontWeight = '600';
-      badge.style.cursor = 'pointer';
-      badge.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.3)';
-      badge.style.transition = 'all 0.3s ease';
-      badge.style.display = 'flex';
-      badge.style.alignItems = 'center';
-      badge.style.gap = '8px';
-      badge.title = 'Click to minimize/expand monitoring status';
-
-      badge.addEventListener('click', () => {
-        if (badge.dataset.minimized === 'true') {
-          badge.dataset.minimized = 'false';
-          badge.style.padding = '8px 14px';
-          renderBadge();
-        } else {
-          badge.dataset.minimized = 'true';
-          badge.style.padding = '6px 8px';
-          badge.innerHTML = `<span style="font-size:14px;">${isMonitoringActive ? '🟢' : '⚪'}</span>`;
+  // Automatically detect and cache the real group title to chrome.storage.local
+  let cacheTimer = null;
+  function autoCacheChatTitle() {
+    try {
+      const threadId = getThreadIdFromUrl();
+      if (!threadId) return;
+      const title = getGroupTitle();
+      if (title && title !== 'Instagram' && title !== 'Messages' && !title.startsWith('Chat #') && title !== 'Instagram Chat') {
+        if (chrome.storage?.local) {
+          chrome.storage.local.get(['cachedChatTitles'], (data) => {
+            const cached = (data && data.cachedChatTitles) || {};
+            if (cached[threadId] !== title) {
+              cached[threadId] = title;
+              chrome.storage.local.set({ cachedChatTitles: cached });
+            }
+          });
         }
-      });
-
-      document.body.appendChild(badge);
-    }
-
-    function renderBadge() {
-      if (badge.dataset.minimized === 'true') {
-        badge.innerHTML = `<span style="font-size:14px;">${active ? '🟢' : '⚪'}</span>`;
-        return;
       }
+    } catch (e) {}
+  }
 
-      if (active) {
-        badge.style.background = '#064e3b';
-        badge.style.color = '#34d399';
-        badge.style.border = '1px solid #10b981';
-        badge.innerHTML = `
-          <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#10b981;box-shadow:0 0 8px #10b981;"></span>
-          <span>AutoAttendMCV: Active</span>
-        `;
-      } else {
-        badge.style.background = '#1e293b';
-        badge.style.color = '#94a3b8';
-        badge.style.border = '1px solid #334155';
-        badge.innerHTML = `
-          <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#64748b;"></span>
-          <span>AutoAttendMCV: Inactive</span>
-        `;
-      }
-    }
-
-    renderBadge();
+  // Remove any legacy in-page floating badges from DOM
+  function removeLegacyBadge() {
+    try {
+      const badge = document.getElementById('auto-attendance-pill') || document.getElementById('auto-attendance-floating-badge');
+      if (badge) badge.remove();
+    } catch (e) {}
   }
 
   function extractCoursevilleUrl(str) {
@@ -475,24 +438,68 @@
     }
   });
 
-  const target = document.querySelector('div[role="main"]') || document.body;
-  observer.observe(target, {
-    childList: true,
-    subtree: true,
-    attributes: true,
-    attributeFilter: ['src', 'srcset', 'style', 'href']
-  });
+  // Initialize DOM observation and badges as soon as document.body is available
+  function initDom() {
+    if (!document.body) {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initDom, { once: true });
+      } else {
+        setTimeout(initDom, 50);
+      }
+      return;
+    }
 
-  // Pre-seed on initial load
-  preSeedExistingMessages();
+    try {
+      // Always observe document.body directly: React dynamically unmounts and remounts div[role="main"] on refresh!
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['src', 'srcset', 'style', 'href']
+      });
 
-  // Sync initial monitoring status
+      // Pre-seed on initial load
+      preSeedExistingMessages();
+      removeLegacyBadge();
+      autoCacheChatTitle();
+      // Secondary check after React finishes rendering top header
+      setTimeout(autoCacheChatTitle, 800);
+      setTimeout(autoCacheChatTitle, 2000);
+    } catch (e) {}
+  }
+  initDom();
+
+  // 1. Sync state immediately from storage (0 ms delay upon page refresh)
+  try {
+    if (chrome.storage?.local) {
+      chrome.storage.local.get(['isActive', 'endTime'], (data) => {
+        if (data && data.isActive && data.endTime && Date.now() < data.endTime) {
+          isMonitoringActive = true;
+        }
+      });
+    }
+    // Real-time sync: when user starts or stops monitoring in popup, sync instantly across all tabs
+    if (chrome.storage?.onChanged) {
+      chrome.storage.onChanged.addListener((changes, area) => {
+        if (area === 'local' && ('isActive' in changes || 'endTime' in changes)) {
+          chrome.storage.local.get(['isActive', 'endTime'], (data) => {
+            const active = Boolean(data && data.isActive && data.endTime && Date.now() < data.endTime);
+            isMonitoringActive = active;
+            if (active) {
+              preSeedExistingMessages();
+            }
+          });
+        }
+      });
+    }
+  } catch (e) {}
+
+  // 2. Double-check status with service worker
   safeSendMessage({ type: 'GET_STATUS' }, (res) => {
     isMonitoringActive = !!(res && res.active);
     if (isMonitoringActive) {
       preSeedExistingMessages();
     }
-    updateFloatingBadge(isMonitoringActive);
   });
 
   // Listen for broadcast and popup messages
@@ -522,7 +529,6 @@
             // When user starts monitoring, IMMEDIATELY freeze all existing chat messages as old history!
             preSeedExistingMessages();
           }
-          updateFloatingBadge(isMonitoringActive);
           sendResponse({ received: true });
           return true;
         }
@@ -530,6 +536,13 @@
         if (msg.type === 'GET_CHAT_INFO') {
           const title = getGroupTitle();
           const threadId = getThreadIdFromUrl();
+          if (title && threadId && chrome.storage?.local) {
+            chrome.storage.local.get(['cachedChatTitles'], (data) => {
+              const cached = (data && data.cachedChatTitles) || {};
+              cached[threadId] = title;
+              chrome.storage.local.set({ cachedChatTitles: cached });
+            });
+          }
           sendResponse({
             title: title,
             threadId: threadId,
