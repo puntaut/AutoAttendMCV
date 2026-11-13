@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "AutoAttendMCV",
   "version": "1.0.0",
-  "description": "Watches Instagram chat for MyCourseVille links or QR codes and opens them in a new tab.",
+  "description": "Cross-platform Chromium extension for Instagram direct chats to monitor MyCourseVille attendance links and QR codes.",
   "permissions": [
     "storage",
     "tabs",

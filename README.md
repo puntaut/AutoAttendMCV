@@ -1,6 +1,24 @@
 # AutoAttendMCV
 
-Chromium extension that monitors Instagram direct messages for MyCourseVille attendance links and QR codes, opening check-in pages automatically.
+Cross-platform Chromium extension for macOS, Windows, and Linux that monitors Instagram direct messages for MyCourseVille attendance links and QR codes, opening check-in pages automatically.
+
+## Compatibility
+
+### Supported Browsers
+Compatible with any modern Chromium-based browser supporting Manifest V3:
+- Google Chrome
+- Brave
+- Microsoft Edge
+- Arc
+- Vivaldi
+- Opera / Opera GX
+- Helium
+- Ungoogled Chromium
+
+### Supported Operating Systems
+- macOS (Apple Silicon and Intel)
+- Windows (Windows 10, Windows 11)
+- Linux (Ubuntu, Debian, Fedora, Arch, and all major distributions)
 
 ## Detection Pipeline
 
@@ -43,16 +61,24 @@ URL Extraction & Normalization                  (Engines: BarcodeDetector,
 - Computer vision preprocessing: contrast stretching, unsharp sharpening, inversion, and quadrant ROI crops.
 - Background tab visibility spoofing and WebSocket sniffing.
 - Session fingerprinting to prevent duplicate tab openings.
-- Chat-specific filtering and configurable timer.
+- Toolbar icon status badge showing active monitoring countdown.
+- Configurable countdown timer with persistent settings.
 
 ## Installation
 
-1. Open `chrome://extensions` or `helium://extensions`.
-2. Enable Developer mode.
-3. Click "Load unpacked" and select this folder.
+1. Open your browser's extension management page:
+   - Google Chrome / Chromium: `chrome://extensions`
+   - Brave: `brave://extensions`
+   - Microsoft Edge: `edge://extensions`
+   - Vivaldi: `vivaldi://extensions`
+   - Opera: `opera://extensions`
+   - Helium: `helium://extensions`
+   - Arc: Extensions > Manage Extensions
+2. Enable "Developer mode" (toggle in the top-right or top-left corner).
+3. Click "Load unpacked" and select this repository folder.
 
 ## Usage
 
-1. Sign in to MyCourseVille in the browser.
+1. Sign in to MyCourseVille in your browser.
 2. Open target Instagram chat tabs (`instagram.com/direct/t/...`).
-3. Click the extension icon, pick the target chats, enter monitoring duration, and click Start Monitoring.
+3. Click the extension icon, set your desired monitoring duration (hours : mins : secs), and click "Start Monitoring".
