@@ -1,6 +1,6 @@
 # AutoAttendMCV
 
-Cross-platform Chromium extension that monitors Instagram direct messages for MyCourseVille attendance links and QR codes, opening check-in pages automatically. Compatible with any modern Chromium browser (Chrome, Brave, Edge, Arc) on macOS, Windows, and Linux.
+Cross-platform Chromium extension that monitors Instagram direct messages for MyCourseVille attendance links and QR codes, opening check-in pages automatically. Compatible with any Chromium browser (Chrome, Brave, Edge, Arc) on macOS, Windows, and Linux.
 
 ## Detection Pipeline
 
