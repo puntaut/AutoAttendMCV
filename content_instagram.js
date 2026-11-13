@@ -292,6 +292,14 @@
     const node = rawNode.nodeType === Node.TEXT_NODE ? rawNode.parentElement : rawNode;
     if (!node || node.nodeType !== Node.ELEMENT_NODE) return;
 
+    // Ignore any text, links, or photos from the left inbox sidebar (thread preview snippets)
+    if (
+      node.closest('a[href*="/direct/t/"], a[href^="/direct/inbox"], nav, div[role="navigation"]') ||
+      (node.querySelector && node.querySelector('a[href*="/direct/t/"]'))
+    ) {
+      return;
+    }
+
     // 1. Check anchor tags in this new node
     const links = node.querySelectorAll ? Array.from(node.querySelectorAll('a[href]')) : [];
     if (node.tagName === 'A') links.push(node);
